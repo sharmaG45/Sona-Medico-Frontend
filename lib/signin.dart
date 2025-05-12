@@ -103,11 +103,11 @@ class Signin extends StatelessWidget {
                   TextFormField(
                     controller: emailController,
                     decoration: const InputDecoration(
-                      labelText: "Email",
+                      labelText: "Username",
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) =>
-                    value!.isEmpty ? 'Enter a valid email' : null,
+                    value!.isEmpty ? 'Enter a valid username' : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(

@@ -14,7 +14,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
 
-    Timer(const Duration(seconds: 15), () {
+    Timer(const Duration(seconds: 5), () {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const Signin()),
@@ -39,7 +39,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
             // App name
             const Text(
-              'InventoryPro',
+              'Sona Medical',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
@@ -50,7 +50,7 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 10),
 
             const Text(
-              'Smart Inventory Management',
+              'Fast, Safe & Trusted Medical Delivery',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
