@@ -69,7 +69,7 @@ class _StockListScreenState extends State<StockListScreen> {
   Future<List<StockItem>> fetchStockItems() async {
     try {
       final response = await http.get(
-        Uri.parse("http://192.168.29.253:3000/api/v1/stockProducts"),
+        Uri.parse("https://sona-medico-backend.onrender.com/api/v1/stockProducts"),
       );
       print("Raw response: ${response.body}");
 

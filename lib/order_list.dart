@@ -56,7 +56,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
     }
 
     final response = await http.get(
-      Uri.parse('http://192.168.29.253:3000/api/v1/viewOrders'),
+      Uri.parse('https://sona-medico-backend.onrender.com/api/v1/viewOrders'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -126,7 +126,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
     if (token == null) return;
 
     final response = await http.delete(
-      Uri.parse('http://192.168.29.253:3000/api/v1/deleteOrder/$id'),
+      Uri.parse('https://sona-medico-backend.onrender.com/api/v1/deleteOrder/$id'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -230,7 +230,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
     if (token == null) return;
 
     final response = await http.put(
-      Uri.parse('http://192.168.29.253:3000/api/v1/editOrder/$id'),
+      Uri.parse('https://sona-medico-backend.onrender.com/api/v1/editOrder/$id'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -324,7 +324,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
     }
 
     final response = await http.put(
-      Uri.parse('http://192.168.29.253:3000/api/v1/editOrder/$id'),
+      Uri.parse('https://sona-medico-backend.onrender.com/api/v1/editOrder/$id'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -358,7 +358,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
       return;
     }
     final response = await http.get(
-      Uri.parse('http://192.168.29.253:3000/api/v1/getDeliveryPersons'),
+      Uri.parse('https://sona-medico-backend.onrender.com/api/v1/getDeliveryPersons'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -388,7 +388,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
     }
 
     final response = await http.put(
-      Uri.parse('http://192.168.29.253:3000/api/v1/editOrder/$id'),
+      Uri.parse('https://sona-medico-backend.onrender.com/api/v1/editOrder/$id'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

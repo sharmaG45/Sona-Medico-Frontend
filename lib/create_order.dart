@@ -47,7 +47,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       }
 
       final response = await http.get(
-        Uri.parse('http://192.168.29.253:3000/api/v1/salespeople'),
+        Uri.parse('https://sona-medico-backend.onrender.com/api/v1/salespeople'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -110,7 +110,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.29.253:3000/api/v1/createOrder'),
+        Uri.parse('https://sona-medico-backend.onrender.com/api/v1/createOrder'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -129,7 +129,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       if (response.statusCode == 200) {
         // Send notification via backend API
         await http.post(
-          Uri.parse('http://192.168.29.253:3000/api/v1/sendNotification'),
+          Uri.parse('https://sona-medico-backend.onrender.com/api/v1/sendNotification'),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',

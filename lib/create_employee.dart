@@ -46,7 +46,7 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
         }
 
         final response = await http.post(
-          Uri.parse('http://192.168.29.253:3000/api/v1/create-employee'),
+          Uri.parse('https://sona-medico-backend.onrender.com/api/v1/create-employee'),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',
