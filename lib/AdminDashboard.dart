@@ -7,6 +7,7 @@ import 'signin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'profilePage.dart';
 import 'StockListScreen.dart';
+import 'create_customer.dart';
 
 class Admindashboard extends StatelessWidget {
   final String username;
@@ -223,15 +224,12 @@ class Admindashboard extends StatelessWidget {
                           MaterialPageRoute(builder: (_) => const StockListScreen()),
                         );
                       }),
-                      // _buildFeatureCard('Manage Orders', Icons.manage_accounts, () {
-                      //   // Add navigation or function
-                      // }),
-                      // _buildFeatureCard('Reports', Icons.report, () {
-                      //   // Add navigation or function
-                      // }),
-                      // _buildFeatureCard('Settings', Icons.settings, () {
-                      //   // Add navigation or function
-                      // }),
+                      _buildFeatureCard('Create Customer', Icons.person_add, () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => CustomerCreatePage()),
+                        );
+                      }),
                     ],
                   ),
                 ],
@@ -280,74 +278,5 @@ class Admindashboard extends StatelessWidget {
       ),
     );
   }
-
-  // @override
-  // Widget build(BuildContext context) {
-  //   final isWide = MediaQuery.of(context).size.width >= 600;
-  //
-  //   return Scaffold(
-  //     appBar: AppBar(
-  //       title: const Text("Admin Dashboard"),
-  //       backgroundColor: Colors.blue,
-  //       actions: [
-  //         if (!isWide) _buildMobileMenu(context),
-  //       ],
-  //     ),
-  //     body: Row(
-  //       children: [
-  //         if (isWide) _buildSidebar(context),
-  //         Expanded(
-  //           child: Center(
-  //             child: Text(
-  //               "Welcome, $username",
-  //               style: const TextStyle(fontSize: 22),
-  //             ),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //     bottomNavigationBar: BottomNavigationBar(
-  //       items: const [
-  //         BottomNavigationBarItem(
-  //           icon: Icon(Icons.home),
-  //           label: 'Home',
-  //         ),
-  //         BottomNavigationBarItem(
-  //           icon: Icon(Icons.notifications),
-  //           label: 'Notifications',
-  //         ),
-  //         BottomNavigationBarItem(
-  //           icon: Icon(Icons.account_circle),
-  //           label: 'Profile',
-  //         ),
-  //       ],
-  //       onTap: (index) {
-  //         switch (index) {
-  //           case 0:
-  //             ScaffoldMessenger.of(context).showSnackBar(
-  //               const SnackBar(content: Text('Home tapped')),
-  //             );
-  //             break;
-  //           case 1:
-  //             ScaffoldMessenger.of(context).showSnackBar(
-  //               const SnackBar(content: Text('Notifications tapped')),
-  //             );
-  //             break;
-  //           case 2:
-  //             Navigator.push(
-  //               context,
-  //               MaterialPageRoute(
-  //                 builder: (_) => ProfileScreen(username: username),
-  //               ),
-  //             );
-  //             break;
-  //         }
-  //       },
-  //     ),
-  //   );
-  // }
-
-
-
 }
 
