@@ -7,11 +7,13 @@ class CartPage extends StatefulWidget {
   final List<Map<String, dynamic>> cart;
   final void Function(int index) removeItem;
   final VoidCallback? clearCart;
+  final Map<String, dynamic> customerData;
 
   const CartPage({
     Key? key,
     required this.cart,
     required this.removeItem,
+    required this.customerData,
     this.clearCart,
   }) : super(key: key);
 
@@ -23,9 +25,10 @@ class _CartPageState extends State<CartPage> {
   final TextEditingController _salespersonController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  List<String> salespeople = [];
-  String? selectedSalesperson;
+  List<Map<String, String>> salespeople = [];
   String? selectedSalespersonId;
+  String? selectedSalespersonName;
+
   bool isFetchingSalespeople = false;
 
   @override
@@ -61,13 +64,15 @@ class _CartPageState extends State<CartPage> {
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
 
-        // Extract the name field
-        final List<String> names = data
-            .map((item) => item['fullName']?.toString() ?? 'Unnamed')
-            .toList();
+        final List<Map<String, String>> people = data.map((item) {
+          return {
+            'id': item['id']?.toString() ?? '',
+            'fullName': item['fullName']?.toString() ?? 'Unnamed',
+          };
+        }).toList();
 
         setState(() {
-          salespeople = names;
+          salespeople = people;
         });
       } else {
         throw Exception('Failed to fetch salespeople');
@@ -81,7 +86,6 @@ class _CartPageState extends State<CartPage> {
     }
   }
 
-
   void _showSalespersonSelector() async {
     await fetchSalespeople();
 
@@ -89,35 +93,130 @@ class _CartPageState extends State<CartPage> {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // allows the modal to take up more height
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (BuildContext context) {
         if (salespeople.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text('No salespeople available.'),
+          return SizedBox(
+            height: 150,
+            child: Center(
+              child: Text(
+                'No salespeople available.',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              ),
+            ),
           );
         }
 
-        return ListView.builder(
-          itemCount: salespeople.length,
-          itemBuilder: (context, index) {
-            return ListTile(
-              title: Text(salespeople[index]),
-              onTap: () {
-                setState(() {
-                  selectedSalesperson = salespeople[index];
-                  _salespersonController.text = salespeople[index];
-                });
-                Navigator.pop(context);
-              },
-            );
-          },
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 50,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(5),
+                ),
+              ),
+              Text(
+                'Select Salesperson',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blueAccent,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Optional: Search Field to filter salespeople
+              TextField(
+                onChanged: (query) {
+                  setState(() {
+                    salespeople = salespeople
+                        .where((person) => (person['fullName'] ?? '')
+                        .toLowerCase()
+                        .contains(query.toLowerCase()))
+                        .toList();
+                  });
+                },
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search),
+                  hintText: 'Search salespeople',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: salespeople.length,
+                  separatorBuilder: (_, __) => Divider(color: Colors.grey[300]),
+                  itemBuilder: (context, index) {
+                    final person = salespeople[index];
+                    final isSelected = person['id'] == selectedSalespersonId;
+
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                      title: Text(
+                        person['fullName'] ?? 'Unnamed',
+                        style: TextStyle(
+                          fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                          color: isSelected ? Colors.blueAccent : Colors.black87,
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? Icon(Icons.check_circle, color: Colors.blueAccent)
+                          : null,
+                      onTap: () {
+                        setState(() {
+                          selectedSalespersonId = person['id'];
+                          selectedSalespersonName = person['fullName'];
+                          _salespersonController.text =
+                              person['fullName'] ?? '';
+                        });
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 12),
+            ],
+          ),
         );
       },
     );
   }
 
+
   Future<void> _submitOrder() async {
-    if (selectedSalesperson == null || widget.cart.isEmpty) return;
+    if (selectedSalespersonId == null || selectedSalespersonName == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a salesperson')),
+      );
+      return;
+    }
+
+    if (widget.cart.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your cart is empty')),
+      );
+      return;
+    }
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -133,10 +232,15 @@ class _CartPageState extends State<CartPage> {
       final url = Uri.parse('https://sona-medico-backend.onrender.com/api/v1/createOrder');
 
       final body = jsonEncode({
-        "customerName": "widget.customerName", // Make sure you're passing this// Extract this from the salespeople object
-        "salespersonName": selectedSalesperson,
+        "customerId": widget.customerData['id'],
+        "customerName": widget.customerData['name'] ?? 'Unknown Customer',
+        "customerPhone": widget.customerData['phone'] ?? '',
+        "customerEmail": widget.customerData['email'] ?? '',
+        "customerAddress": widget.customerData['address'] ?? '',
+        "salespersonId": selectedSalespersonId,
+        "salespersonName": selectedSalespersonName,
         "products": widget.cart.map((product) => {
-          "id": product['id'], // Ensure correct keys used in cart
+          "id": product['id'],
           "title": product['title'],
           "price": product['price'],
           "quantity": product['quantity'],
@@ -153,19 +257,23 @@ class _CartPageState extends State<CartPage> {
         body: body,
       );
 
-      print("Response Data,${response.body}");
+      print("Response Data: ${response.body}");
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Order submitted to $selectedSalesperson!')),
+          SnackBar(content: Text('Order submitted to $selectedSalespersonName!')),
         );
 
+        // Clear the cart after successful order submission
         if (widget.clearCart != null) {
           widget.clearCart!();
         }
 
         _salespersonController.clear();
-        selectedSalesperson = null;
+        setState(() {
+          selectedSalespersonId = null;
+          selectedSalespersonName = null;
+        });
       } else {
         final data = jsonDecode(response.body);
         throw Exception(data['message'] ?? 'Unknown error');
@@ -176,7 +284,6 @@ class _CartPageState extends State<CartPage> {
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +305,29 @@ class _CartPageState extends State<CartPage> {
           IconButton(
             icon: const Icon(Icons.delete_sweep),
             tooltip: "Clear Cart",
-            onPressed: widget.clearCart,
+            onPressed: () {
+              // Confirm before clearing all items
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Clear Cart'),
+                  content: const Text('Are you sure you want to clear the entire cart?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        widget.clearCart!();
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Clear'),
+                    ),
+                  ],
+                ),
+              );
+            },
           )
         ]
             : null,
@@ -224,7 +353,7 @@ class _CartPageState extends State<CartPage> {
           final quantity = item['quantity'] ?? 0;
           final price = item['price'] ?? 0.0;
           final subtotal = quantity * price;
-          final imageUrl = item['imageUrl'];
+          final imageUrl = item['imageUrl'] ?? item['image']; // sometimes image key may differ
 
           return Card(
             elevation: 3,
@@ -232,7 +361,7 @@ class _CartPageState extends State<CartPage> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: ListTile(
-              leading: imageUrl != null
+              leading: imageUrl != null && imageUrl.isNotEmpty
                   ? Image.network(imageUrl, width: 50, height: 50, fit: BoxFit.cover)
                   : const Icon(Icons.shopping_bag, size: 40, color: Colors.blueAccent),
               title: Text(title,
@@ -243,7 +372,12 @@ class _CartPageState extends State<CartPage> {
               ),
               trailing: IconButton(
                 icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: () => widget.removeItem(index),
+                onPressed: () {
+                  // Remove item and notify parent
+                  widget.removeItem(index);
+                  // Optionally, you can call setState here if your widget holds local state for cart
+                  // but since cart comes from parent, parent should rebuild this page
+                },
               ),
             ),
           );
@@ -286,7 +420,7 @@ class _CartPageState extends State<CartPage> {
                       )
                           : const Icon(Icons.arrow_drop_down),
                     ),
-                    validator: (val) => selectedSalesperson == null
+                    validator: (val) => selectedSalespersonId == null
                         ? 'Please select a salesperson'
                         : null,
                   ),

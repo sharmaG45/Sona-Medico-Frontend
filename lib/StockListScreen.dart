@@ -12,6 +12,7 @@ class StockItem {
   final int qtyPerPack;
   final String group;
   final String manufacturer;
+  final String schedule;
   final String content;
   final String storage;
   final String imageLink;
@@ -29,6 +30,7 @@ class StockItem {
     required this.qtyPerPack,
     required this.group,
     required this.manufacturer,
+    required this.schedule,
     required this.content,
     required this.storage,
     required this.imageLink,
@@ -52,6 +54,7 @@ class StockItem {
       qtyPerPack: json['QtyPerPack'] ?? 0,
       group: json['Group'] ?? '',
       manufacturer: json['Manufacturer'] ?? '',
+      schedule: json['Schedule'] ?? '',
       content: json['Content'] ?? '',
       storage: json['Storage'] ?? '',
       imageLink: json['ImageLink'] ?? '',
@@ -135,45 +138,24 @@ class _StockListScreenState extends State<StockListScreen> {
     });
   }
 
-  Future<void> addToCartAPI(Map<String, dynamic> product, String salespersonId, String salespersonName) async {
-    const String apiUrl = 'https://sona-medico-backend.onrender.com/api/v1/createOrder'; // Replace with actual URL
-
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'customerName': 'Shubham Kumar',  // You can retrieve the customer's name from the app's state
-          'customerPhone': '9097989707',  // Get the phone number from the app's state
-          'salespersonId': salespersonId,
-          'salespersonName': salespersonName,
-          'products': [product],  // Assuming product is a single product object
-        }),
-      );
-
-      print("Response Status,${response.statusCode}");
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Item added to cart")),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to add item to cart")),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+  Color getCardColor(String? schedule) {
+    switch (schedule?.toUpperCase()) {
+      case 'NARCOTIC':
+        return Colors.red.shade100;
+      case 'SCHEDULE H1 DRUGS':
+        return Colors.orange.shade100;
+      case 'NO4':
+        return Colors.purple.shade100;
+      default:
+        return Colors.grey.shade100;
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
+    final customerData = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
     // final customerData = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-    // print("customerData,${customerData}");
+    print("Customer Data: $customerData");
     return Scaffold(
       appBar: AppBar(
         title: const Text("Stock Details"),
@@ -192,6 +174,7 @@ class _StockListScreenState extends State<StockListScreen> {
                         removeItem: (index) {
                           setState(() => cart.removeAt(index));
                         },
+                        customerData: customerData,
                       ),
                     ),
                   );
@@ -253,6 +236,7 @@ class _StockListScreenState extends State<StockListScreen> {
 
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      color: getCardColor(item.schedule),
                       child: ExpansionTile(
                         leading: const Icon(Icons.inventory_2_rounded, color: Colors.green),
                         title: Text(item.itemName, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -296,7 +280,7 @@ class _StockListScreenState extends State<StockListScreen> {
                                     Text('$selectedQty', style: const TextStyle(fontSize: 16)),
                                     IconButton(
                                       onPressed: () {
-                                        final maxQty = item.whLooseQty + item.whPackQty;
+                                        final maxQty = item.brLooseQty + item.whLooseQty+item.brPackQty + item.whPackQty;
                                         if (selectedQty < maxQty) {
                                           setState(() {
                                             selectedQuantities[item.itemCode] = selectedQty + 1;

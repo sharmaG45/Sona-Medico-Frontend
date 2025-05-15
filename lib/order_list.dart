@@ -63,6 +63,8 @@ class _OrderListScreenState extends State<OrderListScreen> {
       },
     );
 
+    print("Response Order List Data,${response.body}");
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
 
@@ -139,61 +141,57 @@ class _OrderListScreenState extends State<OrderListScreen> {
   }
 
   void _editOrder(BuildContext context, Map<String, dynamic> order) {
-    productNameController.text = order['productName'] ?? '';
     customerNameController.text = order['customerName'] ?? '';
     customerPhoneController.text = order['customerPhone'] ?? '';
-    quantityController.text = order['quantity'].toString();
-    priceController.text = order['price'].toString();
 
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Edit Order"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: productNameController,
-              decoration: const InputDecoration(labelText: 'Product Name'),
+    for (var product in order['products']) {
+      TextEditingController qtyController = TextEditingController(text: product['quantity'].toString());
+      TextEditingController priceController = TextEditingController(text: product['price'].toString());
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text("Edit ${product['productName']}"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: qtyController,
+                decoration: const InputDecoration(labelText: 'Quantity'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField(
+                controller: priceController,
+                decoration: const InputDecoration(labelText: 'Price'),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
             ),
-            TextField(
-              controller: customerNameController,
-              decoration: const InputDecoration(labelText: 'Customer Name'),
-            ),
-            TextField(
-              controller: customerPhoneController,
-              decoration: const InputDecoration(labelText: 'Customer Phone'),
-            ),
-            TextField(
-              controller: quantityController,
-              decoration: const InputDecoration(labelText: 'Quantity'),
-              keyboardType: TextInputType.number,
-            ),
-            TextField(
-              controller: priceController,
-              decoration: const InputDecoration(labelText: 'Price'),
-              keyboardType: TextInputType.number,
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _updateSingleProductInOrder(
+                  order['id'],
+                  product['productId'],
+                  int.tryParse(qtyController.text) ?? product['quantity'],
+                  double.tryParse(priceController.text) ?? product['price'],
+                );
+              },
+              child: const Text("Update Product"),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _updateOrder(order['id'], quantityController.text, priceController.text);
-            },
-            child: const Text("Update"),
-          ),
-        ],
-      ),
-    );
+      );
+    }
   }
 
-  Future<void> _updateOrder(String id, String quantity, String price) async {
+
+  Future<void> _updateSingleProductInOrder( String id, String productId, int quantity, double price,) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     if (token == null) return;
@@ -205,22 +203,23 @@ class _OrderListScreenState extends State<OrderListScreen> {
         'Authorization': 'Bearer $token',
       },
       body: jsonEncode({
-        'productName': productNameController.text,
-        'customerName': customerNameController.text,
-        'customerPhone':customerPhoneController.text,
-        'quantity': int.tryParse(quantity) ?? 0,
-        'price': int.tryParse(price) ?? 0,
+        'productId': productId,
+        'quantity': quantity,
+        'price': price,
       }),
     );
 
+    print("Edit Order Response,${response.body}");
+    print("Edit Order Response,${response.statusCode}");
     if (response.statusCode == 200) {
+      print("Order updated successfully");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Order updated successfully')),
       );
-      fetchOrders();
     } else {
+      print("Failed to update order: ${response.body}");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to update order')),
+        SnackBar(content: Text('Failed to update order: ${response.body}')),
       );
     }
   }
@@ -299,10 +298,10 @@ class _OrderListScreenState extends State<OrderListScreen> {
     }
   }
 
-  Future<void> _assignDeliveryPerson(String id) async {
+  Future<void> _assignDeliveryPerson(String orderId) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    print("User Id,$id");
+
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unauthorized: Token not found')),
@@ -310,29 +309,36 @@ class _OrderListScreenState extends State<OrderListScreen> {
       return;
     }
 
-    final response = await http.put(
-      Uri.parse('https://sona-medico-backend.onrender.com/api/v1/editOrder/$id'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'deliveryAssignedToId': selectedDeliveryPerson,
-      }),
-    );
-
-    print("StatusCode,${response.statusCode}");
-    if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Order assigned to delivery person')),
+    try {
+      final response = await http.put(
+        Uri.parse('https://sona-medico-backend.onrender.com/api/v1/editOrder/$orderId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'deliveryAssignedToId': selectedDeliveryPerson,
+        }),
       );
-      fetchOrders();
-    } else {
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Order assigned to delivery person')),
+        );
+        await fetchOrders(); // Refresh the order list after assignment
+      } else {
+        final errorData = jsonDecode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to assign delivery person: ${errorData['message'] ?? 'Unknown error'}')),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to assign delivery person')),
+        SnackBar(content: Text('Error assigning delivery person: $e')),
       );
     }
   }
+
 
   void _callCustomer(String phoneNumber) async {
     final Uri url = Uri(scheme: 'tel', path: phoneNumber);
@@ -366,13 +372,23 @@ class _OrderListScreenState extends State<OrderListScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Product: ${order['productName'] ?? 'No Product'}",
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const Text("Products:", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ...List<Widget>.from((order['products'] as List).map((product) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2.0),
+                      child: Text(
+                        "${product['productName']} - Qty: ${product['quantity']}, Price: ₹${(product['price'] / 100).toStringAsFixed(2)}",
+                      ),
+                    );
+                  })),
+
                   const SizedBox(height: 5),
-                  Text("Customer: ${order['customerName'] ?? 'N/A'}"),
-                  Text("Quantity: ${order['quantity']}, Price: ₹${order['price']}"),
+                  Text("Customer Name: ${order['customerName'] ?? 'N/A'}"),
+                  // Text("Customer Phone: ${order['customerPhone'] ?? 'N/A'}"),
+                  // Text("Customer Email: ${order['customerEmail'] ?? 'N/A'}"),
+                  Text("Customer Address: ${order['customerAddress'] ?? 'N/A'}"),
                   if (order['status'] != null) Text("Status: ${order['status']}"),
-                  if (order['assignedTo'] != null) Text("Assigned To: ${order['assignedTo']}"),
+                  if (order['assignedToName'] != null) Text("Assigned Salesperson: ${order['assignedToName']}"),
                   if (roles == 'delivery' && order['customerPhone'] != null) ...[
                     Row(
                       children: [
@@ -410,52 +426,78 @@ class _OrderListScreenState extends State<OrderListScreen> {
                       // Admins or Managers can Assign
                       if ((isAdmin || roles == 'manager') && order['status'] == 'Ready for Delivery') ...[
                         ElevatedButton.icon(
-                          onPressed: () {
-                            fetchDeliveryPersons();
+                          onPressed: () async {
+                            // Show loading dialog while fetching delivery persons
                             showDialog(
                               context: context,
-                              builder: (_) => AlertDialog(
-                                title: const Text("Assign"),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    DropdownButton<String>(
-                                      value: selectedDeliveryPerson,
-                                      hint: const Text("Select Delivery Person"),
-                                      onChanged: (value) {
-                                        setState(() {
-                                          selectedDeliveryPerson = value;
-                                        });
-                                      },
-                                      items: deliveryPersons.map((person) {
-                                        return DropdownMenuItem<String>(
-                                          value: person['id'],
-                                          child: Text(person['fullName']),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ],
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text("Cancel"),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      _assignDeliveryPerson(order['id']);
-                                    },
-                                    child: const Text("Assign"),
-                                  ),
-                                ],
-                              ),
+                              barrierDismissible: false,
+                              builder: (_) => const Center(child: CircularProgressIndicator()),
+                            );
+
+                            await fetchDeliveryPersons();
+
+                            // Close loading dialog
+                            if (context.mounted) Navigator.pop(context);
+
+                            if (!context.mounted) return;
+
+                            // Show assign dialog
+                            showDialog(
+                              context: context,
+                              builder: (_) {
+                                String? tempSelectedDeliveryPerson = selectedDeliveryPerson;
+
+                                return StatefulBuilder(
+                                  builder: (context, setState) {
+                                    return AlertDialog(
+                                      title: const Text("Assign Delivery Person"),
+                                      content: deliveryPersons.isEmpty
+                                          ? const Text("No delivery persons available.")
+                                          : DropdownButton<String>(
+                                        value: tempSelectedDeliveryPerson,
+                                        hint: const Text("Select Delivery Person"),
+                                        isExpanded: true,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            tempSelectedDeliveryPerson = value;
+                                          });
+                                        },
+                                        items: deliveryPersons.map((person) {
+                                          return DropdownMenuItem<String>(
+                                            value: person['id'],
+                                            child: Text(person['fullName']),
+                                          );
+                                        }).toList(),
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text("Cancel"),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: tempSelectedDeliveryPerson == null
+                                              ? null
+                                              : () {
+                                            Navigator.pop(context);
+                                            setState(() {
+                                              selectedDeliveryPerson = tempSelectedDeliveryPerson;
+                                            });
+                                            _assignDeliveryPerson(order['id']);
+                                          },
+                                          child: const Text("Assign"),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
                             );
                           },
                           icon: const Icon(Icons.delivery_dining),
                           label: const Text("Assign"),
                         ),
                       ],
+
 
                       // Salesperson and Delivery roles
                       if (roles == 'salesperson' && order['status'] == 'Shipped')
@@ -481,135 +523,4 @@ class _OrderListScreenState extends State<OrderListScreen> {
       ),
     );
   }
-
-  // Previous
-  // @override
-  // Widget build(BuildContext context) {
-  //   return Scaffold(
-  //     appBar: AppBar(title: const Text("Order List")),
-  //     body: ListView.builder(
-  //       itemCount: orders.length,
-  //       itemBuilder: (_, index) {
-  //         final order = orders[index];
-  //         return Card(
-  //           margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-  //           child: Padding(
-  //             padding: const EdgeInsets.all(12.0),
-  //             child: Column(
-  //               crossAxisAlignment: CrossAxisAlignment.start,
-  //               children: [
-  //                 Text("Product: ${order['productName'] ?? 'No Product'}",
-  //                     style: const TextStyle(fontWeight: FontWeight.bold)),
-  //                 const SizedBox(height: 5),
-  //                 Text("Customer: ${order['customerName'] ?? 'N/A'}"),
-  //                 Text("Quantity: ${order['quantity']}, Price: ₹${order['price']}"),
-  //                 if (order['status'] != null) Text("Status: ${order['status']}"),
-  //                 if (order['assignedTo'] != null) Text("Assigned To: ${order['assignedTo']}"),
-  //                 if (roles == 'delivery' && order['customerPhone'] != null) ...[
-  //                   Row(
-  //                     children: [
-  //                       const Icon(Icons.phone_android),
-  //                       const SizedBox(width: 8),
-  //                       Text("Phone: ****${order['customerPhone'].toString().substring(order['customerPhone'].length - 4)}"),
-  //                       IconButton(
-  //                         icon: const Icon(Icons.call, color: Colors.green),
-  //                         onPressed: () => _callCustomer(order['customerPhone']),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                 ],
-  //
-  //                 if (order['createdAt'] != null && order['createdAt']['_seconds'] != null)
-  //                   Text("Created At: ${DateTime.fromMillisecondsSinceEpoch(order['createdAt']['_seconds'] * 1000)}"),
-  //                 const SizedBox(height: 10),
-  //                 Row(
-  //                   mainAxisAlignment: MainAxisAlignment.end,
-  //                   children: [
-  //                     if (isAdmin) ...[
-  //                       TextButton.icon(
-  //                         onPressed: () => _editOrder(context, order),
-  //                         icon: const Icon(Icons.edit, color: Colors.blue),
-  //                         label: const Text("Edit"),
-  //                       ),
-  //                       const SizedBox(width: 8),
-  //                       TextButton.icon(
-  //                         onPressed: () => _confirmDelete(context, order['id'], index),
-  //                         icon: const Icon(Icons.delete, color: Colors.red),
-  //                         label: const Text("Delete"),
-  //                       ),
-  //                       // Show this button only when the status is "Ready for Delivery"
-  //                       if (order['status'] == 'Ready for Delivery') ...[
-  //                         ElevatedButton.icon(
-  //                           onPressed: () {
-  //                             fetchDeliveryPersons(); // Fetch delivery persons
-  //                             showDialog(
-  //                               context: context,
-  //                               builder: (_) => AlertDialog(
-  //                                 title: const Text("Assign"),
-  //                                 content: Column(
-  //                                   mainAxisSize: MainAxisSize.min,
-  //                                   children: [
-  //                                     DropdownButton<String>(
-  //                                       value: selectedDeliveryPerson,
-  //                                       hint: const Text("Select Delivery Person"),
-  //                                       onChanged: (value) {
-  //                                         setState(() {
-  //                                           selectedDeliveryPerson = value;
-  //                                         });
-  //                                       },
-  //                                       items: deliveryPersons.map((person) {
-  //                                         return DropdownMenuItem<String>(
-  //                                           value: person['id'],
-  //                                           child: Text(person['fullName']),
-  //                                         );
-  //                                       }).toList(),
-  //                                     ),
-  //                                   ],
-  //                                 ),
-  //                                 actions: [
-  //                                   TextButton(
-  //                                     onPressed: () => Navigator.pop(context),
-  //                                     child: const Text("Cancel"),
-  //                                   ),
-  //                                   ElevatedButton(
-  //                                     onPressed: () {
-  //                                       Navigator.pop(context);
-  //                                       _assignDeliveryPerson(order['id']);
-  //                                     },
-  //                                     child: const Text("Assign"),
-  //                                   ),
-  //                                 ],
-  //                               ),
-  //                             );
-  //                           },
-  //                           icon: const Icon(Icons.delivery_dining),
-  //                           label: const Text("Assign"),
-  //                         ),
-  //                       ],
-  //                     ] else ...[
-  //                       if (roles == 'salesperson' &&
-  //                           (order['status'] == 'Shipped'))
-  //                         ElevatedButton.icon(
-  //                           onPressed: () => _markReadyForDelivery(order['id']),
-  //                           icon: const Icon(Icons.check),
-  //                           label: const Text("Confirm Order"),
-  //                         ),
-  //                       if (roles == 'delivery' && order['status'] == 'Ready for Delivery')
-  //                         ElevatedButton.icon(
-  //                           onPressed: () => _markReadyForDelivery(order['id']),
-  //                           icon: const Icon(Icons.check),
-  //                           label: const Text("Confirm Order"),
-  //                         ),
-  //
-  //                     ],
-  //                   ],
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //         );
-  //       },
-  //     ),
-  //   );
-  // }
 }

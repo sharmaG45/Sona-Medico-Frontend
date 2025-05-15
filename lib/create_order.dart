@@ -59,7 +59,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           Navigator.pushReplacementNamed(
             context,
             '/createCustomer',
-            arguments: phone,
+            arguments: {'phone': phone},
           );
         }
       } else {

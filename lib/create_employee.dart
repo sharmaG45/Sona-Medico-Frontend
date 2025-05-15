@@ -18,6 +18,7 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   String role = 'salesperson';
+  bool _obscurePassword = true;
   bool _isLoading = false;
 
   Future<void> _submitForm() async {
@@ -53,7 +54,7 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
           },
           body: json.encode(employeeData),
         );
-
+print("Resposne Employee,${response.statusCode}");
         setState(() => _isLoading = false);
 
         if (response.statusCode == 200) {
@@ -126,10 +127,43 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
               ),
               TextFormField(
                 controller: passwordController,
-                decoration: const InputDecoration(labelText: "Password"),
-                obscureText: true,
-                validator: (value) => value!.isEmpty ? 'Enter password' : null,
+                decoration: InputDecoration(
+                  labelText: "Password",
+                  helperText: "Min 8 chars, include upper, lower, number & special char",
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                ),
+                obscureText: _obscurePassword,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Enter password';
+                  }
+                  final password = value.trim();
+                  if (password.length < 8) {
+                    return 'Password must be at least 8 characters';
+                  }
+                  if (!RegExp(r'[A-Z]').hasMatch(password)) {
+                    return 'Include at least one uppercase letter';
+                  }
+                  if (!RegExp(r'[a-z]').hasMatch(password)) {
+                    return 'Include at least one lowercase letter';
+                  }
+                  if (!RegExp(r'[0-9]').hasMatch(password)) {
+                    return 'Include at least one number';
+                  }
+                  return null;
+                },
               ),
+
+
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
                 value: role,

@@ -9,50 +9,52 @@ class CustomerCreatePage extends StatefulWidget {
 
 class _CustomerCreatePageState extends State<CustomerCreatePage> {
   final _formKey = GlobalKey<FormState>();
-  String? _name;
-  String? _email;
-  String? _phone;
-  String? _address;
 
-  // Function to handle form submission and API call
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+
+  String? _phone;
+
+  // Submit form
   Future<void> _submitForm() async {
     if (_formKey.currentState?.validate() ?? false) {
-      // If the form is valid, save the values
-      _formKey.currentState?.save();
-
-      // Prepare the data to send to the API
-      final Map<String, dynamic> customerData = {
-        'name': _name,
-        'email': _email,
-        'phone': _phone,
-        'address': _address,
+      final customerData = {
+        'name': _nameController.text,
+        'email': _emailController.text,
+        'phone': _phoneController.text,
+        'address': _addressController.text,
       };
 
-      // Send a POST request to the API
       try {
         final response = await http.post(
-          Uri.parse('https://sona-medico-backend.onrender.com/api/v1/create-customer'), // Replace with your API URL
-          headers: <String, String>{
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode(customerData), // Encode the data to JSON
+          Uri.parse('https://sona-medico-backend.onrender.com/api/v1/create-customer'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(customerData),
         );
 
         if (response.statusCode == 200) {
-          // If the API call is successful
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Customer created successfully')),
           );
-          // Optionally, navigate to another page after submission
-          // Navigator.pushNamed(context, '/successPage');
+
+          // Clear the form
+          _formKey.currentState?.reset();
+          _nameController.clear();
+          _emailController.clear();
+          _addressController.clear();
+
+          // Keep the phone number pre-filled and non-editable
+          _phoneController.text = _phone ?? '';
+
+          Navigator.pushReplacementNamed(context, '/stockData', arguments: customerData);
         } else {
-          // If the API call fails
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to create customer')),
           );
         }
       } catch (e) {
-        // If there is an error making the API call
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
         );
@@ -61,94 +63,81 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final phoneData = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (phoneData != null && phoneData.containsKey('phone')) {
+        _phone = phoneData['phone'];
+        _phoneController.text = _phone!;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Customer'),
-      ),
+      appBar: AppBar(title: const Text('Create Customer')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: <Widget>[
-              // Name input field
               TextFormField(
+                controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Full Name',
                   hintText: 'Enter customer name',
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a name';
-                  }
-                  return null;
-                },
-                onSaved: (value) {
-                  _name = value;
-                },
+                validator: (value) =>
+                value == null || value.isEmpty ? 'Please enter a name' : null,
               ),
               const SizedBox(height: 16.0),
 
-              // Email input field
               TextFormField(
+                controller: _emailController,
                 decoration: const InputDecoration(
                   labelText: 'Email',
                   hintText: 'Enter customer email',
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter an email';
-                  }
-                  if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
-                    return 'Please enter a valid email';
-                  }
+                  if (value == null || value.isEmpty) return 'Please enter an email';
+                  if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) return 'Enter a valid email';
                   return null;
-                },
-                onSaved: (value) {
-                  _email = value;
                 },
               ),
               const SizedBox(height: 16.0),
 
-              // Phone input field
               TextFormField(
+                controller: _phoneController,
+                enabled: false,
                 decoration: const InputDecoration(
                   labelText: 'Phone Number',
-                  hintText: 'Enter customer phone number',
                 ),
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a phone number';
-                  }
-                  return null;
-                },
-                onSaved: (value) {
-                  _phone = value;
-                },
               ),
               const SizedBox(height: 16.0),
 
-              // Address input field
               TextFormField(
+                controller: _addressController,
                 decoration: const InputDecoration(
                   labelText: 'Address',
                   hintText: 'Enter customer address',
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter an address';
-                  }
-                  return null;
-                },
-                onSaved: (value) {
-                  _address = value;
-                },
+                validator: (value) =>
+                value == null || value.isEmpty ? 'Please enter an address' : null,
               ),
               const SizedBox(height: 32.0),
 
-              // Submit button
               ElevatedButton(
                 onPressed: _submitForm,
                 child: const Text('Create Customer'),

@@ -8,8 +8,19 @@ import 'SalespersonDashboard.dart';
 import 'DeliveryPerson.dart';
 import 'signup.dart';
 
-class Signin extends StatelessWidget {
+class Signin extends StatefulWidget {
   const Signin({super.key});
+
+  @override
+  State<Signin> createState() => _SigninState();
+}
+
+class _SigninState extends State<Signin> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _isLoading = false;
 
   Future<void> _login({
     required String username,
@@ -17,6 +28,8 @@ class Signin extends StatelessWidget {
     required BuildContext context,
   }) async {
     const String apiUrl = 'https://sona-medico-backend.onrender.com/api/v1/signin';
+
+    setState(() => _isLoading = true);
 
     try {
       final response = await http.post(
@@ -53,7 +66,9 @@ class Signin extends StatelessWidget {
             nextPage = Deliveryperson(username: username);
             break;
           default:
-            nextPage = const Scaffold(body: Center(child: Text("Unknown role")));
+            nextPage = const Scaffold(
+              body: Center(child: Text("Unknown role")),
+            );
         }
 
         Navigator.pushReplacement(
@@ -62,22 +77,26 @@ class Signin extends StatelessWidget {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login failed: ${data['message'] ?? response.body}')),
+          SnackBar(
+            content: Text('Login failed: ${data['message'] ?? response.body}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final _formKey = GlobalKey<FormState>();
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
-
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -107,33 +126,51 @@ class Signin extends StatelessWidget {
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) =>
-                    value!.isEmpty ? 'Enter a valid username' : null,
+                    value == null || value.isEmpty ? 'Enter a valid username' : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: passwordController,
-                    decoration: const InputDecoration(
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
                       labelText: "Password",
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
                     ),
-                    obscureText: true,
                     validator: (value) =>
-                    value!.length < 6 ? 'Password too short' : null,
+                    value != null && value.length < 6 ? 'Password too short' : null,
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: _isLoading
+                          ? null
+                          : () {
                         if (_formKey.currentState!.validate()) {
                           _login(
-                            username: emailController.text,
-                            password: passwordController.text,
+                            username: emailController.text.trim(),
+                            password: passwordController.text.trim(),
                             context: context,
                           );
                         }
                       },
-                      child: const Padding(
+                      child: _isLoading
+                          ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                          : const Padding(
                         padding: EdgeInsets.symmetric(vertical: 12.0),
                         child: Text("Login", style: TextStyle(fontSize: 16)),
                       ),
@@ -141,14 +178,12 @@ class Signin extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const Signup()),
-                      );
-                    },
-                    child: const Text("Don't have an account? Sign Up"),
-                  ),
+                    onPressed: null, // This disables the button
+                    child: const Text(
+                      "Don't have an account? Sign Up",
+                      style: TextStyle(color: Colors.grey), // Optional: show disabled style
+                    ),
+                  )
                 ],
               ),
             ),
