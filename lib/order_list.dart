@@ -38,7 +38,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
     final prefs = await SharedPreferences.getInstance();
     final role = prefs.getString('role');
     roles=role;
-    print("User Asscess ROLE, $role");
+    print("User Asccess ROLE, $role");
     setState(() {
       isAdmin = role == 'admin';
     });
@@ -88,37 +88,6 @@ class _OrderListScreenState extends State<OrderListScreen> {
     }
   }
 
-  // Previous
-
-  // Future<void> fetchOrders() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final token = prefs.getString('token');
-  //   if (token == null) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text('Unauthorized: Token not found')),
-  //     );
-  //     return;
-  //   }
-  //
-  //   final response = await http.get(
-  //     Uri.parse('http://192.168.29.253:3000/api/v1/viewOrders'),
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //       'Authorization': 'Bearer $token',
-  //     },
-  //   );
-  //
-  //   if (response.statusCode == 200) {
-  //     final data = jsonDecode(response.body);
-  //     setState(() {
-  //       orders = data['orders'];
-  //     });
-  //   } else {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text('Failed to fetch orders')),
-  //     );
-  //   }
-  // }
 
   Future<void> deleteOrder(String id, int index) async {
     final prefs = await SharedPreferences.getInstance();
@@ -255,52 +224,6 @@ class _OrderListScreenState extends State<OrderListScreen> {
       );
     }
   }
-
-  // Future<void> _markReadyForDelivery(String id) async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final token = prefs.getString('token');
-  //   final role = prefs.getString('role');
-  //   if (token == null) return;
-  //
-  //   // Change the order status based on the role and current status
-  //   String newStatus;
-  //   if (role == 'salesperson') {
-  //     newStatus = 'Ready for Delivery'; // For salesperson, mark it ready for delivery
-  //   } else if (role == 'delivery') {
-  //     newStatus = 'Delivered'; // For delivery, mark it as delivered after confirming
-  //   } else {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text('Unknown role or invalid status')),
-  //     );
-  //     return;
-  //   }
-  //
-  //   final response = await http.put(
-  //     Uri.parse('http://192.168.29.253:3000/api/v1/editOrder/$id'),
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //       'Authorization': 'Bearer $token',
-  //     },
-  //     body: jsonEncode({
-  //       'status': newStatus,
-  //       'deliveryAssignedToId': selectedDeliveryPerson, // Ensure this is set correctly
-  //     }),
-  //   );
-  //
-  //   if (response.statusCode == 200) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text('Order marked as Ready for Delivery')),
-  //     );
-  //
-  //     // Call fetchOrders after updating status to reflect changes on the UI
-  //     fetchOrders();
-  //   } else {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text('Failed to update status')),
-  //     );
-  //   }
-  // }
-
 
   //   // Previous
   Future<void> _markReadyForDelivery(String id) async {

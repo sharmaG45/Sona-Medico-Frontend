@@ -40,8 +40,6 @@ class StockItem {
   });
 
   factory StockItem.fromJson(Map<String, dynamic> json) {
-    print('Parsing JSON for item: $json');  // Debugging line
-
     final closingStock = json['ClosingStock'] ?? {};
     final brStock = closingStock['BR'] ?? {};
     final whStock = closingStock['WH'] ?? {};
@@ -78,10 +76,8 @@ class _StockListScreenState extends State<StockListScreen> {
   List<StockItem> allStockItems = [];
   List<StockItem> filteredItems = [];
   List<Map<String, dynamic>> cart = [];
-
   final TextEditingController _searchController = TextEditingController();
 
-  // To track selected quantity for each itemCode
   Map<String, int> selectedQuantities = {};
 
   @override
@@ -96,23 +92,11 @@ class _StockListScreenState extends State<StockListScreen> {
         Uri.parse("https://sona-medico-backend.onrender.com/api/v1/stockProducts"),
       );
 
-      print('Response Status Code: ${response.statusCode}');  // Check the status code
-      print('Response Body: ${response.body}');  // Check the response body
-
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
-
-        // Ensure this step is correct
-        final List<dynamic> jsonData =
-        decoded is List ? decoded : decoded['data'];  // Adjust this based on actual API response
-
-        if (jsonData.isEmpty) {
-          throw Exception('No stock data found in response.');
-        }
+        final List<dynamic> jsonData = decoded is List ? decoded : decoded['data'];
 
         final stockList = jsonData.map((item) => StockItem.fromJson(item)).toList();
-
-        // Sort alphabetically by item name
         stockList.sort((a, b) => a.itemName.compareTo(b.itemName));
 
         setState(() {
@@ -139,71 +123,57 @@ class _StockListScreenState extends State<StockListScreen> {
         final name = item.itemName.toLowerCase();
         final code = item.itemCode.toLowerCase();
         final category = item.group.toLowerCase();
+        final content = item.content.toLowerCase();
+        final mfg = item.manufacturer.toLowerCase();
 
         return name.contains(lowerQuery) ||
             code.contains(lowerQuery) ||
             category.contains(lowerQuery) ||
-            name.startsWith(lowerQuery) ||
-            name.endsWith(lowerQuery) ||
-            code.startsWith(lowerQuery) ||
-            code.endsWith(lowerQuery);
+            content.contains(lowerQuery) ||
+            mfg.contains((lowerQuery));
       }).toList();
     });
   }
 
-  Future<void> updateStockQuantity({
-    required String itemCode,
-    required String location,
-    required int pack,
-    required int loose,
-  }) async {
+  Future<void> addToCartAPI(Map<String, dynamic> product, String salespersonId, String salespersonName) async {
+    const String apiUrl = 'https://sona-medico-backend.onrender.com/api/v1/createOrder'; // Replace with actual URL
+
     try {
-      final response = await http.patch(
-        Uri.parse('https://sona-medico-backend.onrender.com/update_stock/$itemCode'),
-        body: json.encode({
-          'location': location,
-          'pack': pack,
-          'loose': loose,
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'customerName': 'Shubham Kumar',  // You can retrieve the customer's name from the app's state
+          'customerPhone': '9097989707',  // Get the phone number from the app's state
+          'salespersonId': salespersonId,
+          'salespersonName': salespersonName,
+          'products': [product],  // Assuming product is a single product object
         }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
       );
+
+      print("Response Status,${response.statusCode}");
 
       if (response.statusCode == 200) {
-        print('Stock updated successfully');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Item added to cart")),
+        );
       } else {
-        print('Failed to update stock: ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to add item to cart")),
+        );
       }
     } catch (e) {
-      print('Error updating stock: $e');
-    }
-  }
-
-
-
-  void addToCart(StockItem item) {
-    int qty = selectedQuantities[item.itemCode] ?? 0;
-
-    if (qty > 0) {
-      cart.add({
-        'item': item,
-        'quantity': qty,
-      });
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("${item.itemName} added to cart (Qty: $qty)")),
+        SnackBar(content: Text("Error: $e")),
       );
-
-      setState(() {
-        selectedQuantities[item.itemCode] = 0;
-      });
     }
   }
 
 
   @override
   Widget build(BuildContext context) {
+    // final customerData = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    // print("customerData,${customerData}");
     return Scaffold(
       appBar: AppBar(
         title: const Text("Stock Details"),
@@ -220,14 +190,12 @@ class _StockListScreenState extends State<StockListScreen> {
                       builder: (context) => CartPage(
                         cart: cart,
                         removeItem: (index) {
-                          cart.removeAt(index);
-                          Navigator.pop(context); // Go back to refresh badge
+                          setState(() => cart.removeAt(index));
                         },
                       ),
                     ),
                   );
                 },
-
               ),
               if (cart.isNotEmpty)
                 Positioned(
@@ -239,16 +207,10 @@ class _StockListScreenState extends State<StockListScreen> {
                       color: Colors.red,
                       shape: BoxShape.circle,
                     ),
-                    constraints: const BoxConstraints(
-                      minWidth: 20,
-                      minHeight: 20,
-                    ),
+                    constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
                     child: Text(
-                      '${cart.length}', // Number of distinct items
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                      ),
+                      '${cart.length}',
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -256,8 +218,6 @@ class _StockListScreenState extends State<StockListScreen> {
             ],
           )
         ],
-
-
       ),
       body: FutureBuilder<List<StockItem>>(
         future: stockFuture,
@@ -268,25 +228,20 @@ class _StockListScreenState extends State<StockListScreen> {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          final stockItems = snapshot.data!;
-
           return Column(
             children: [
-              //  Search Bar UI
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),
-                    hintText: 'Search by name, code, category...',
+                    hintText: 'Search by name, code, content, MFG, category...',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   onChanged: filterStockItems,
                 ),
               ),
-
-              //  Stock List
               Expanded(
                 child: filteredItems.isEmpty
                     ? const Center(child: Text('No matching stock found.'))
@@ -294,6 +249,8 @@ class _StockListScreenState extends State<StockListScreen> {
                   itemCount: filteredItems.length,
                   itemBuilder: (context, index) {
                     final item = filteredItems[index];
+                    final selectedQty = selectedQuantities[item.itemCode] ?? 0;
+
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       child: ExpansionTile(
@@ -301,19 +258,16 @@ class _StockListScreenState extends State<StockListScreen> {
                         title: Text(item.itemName, style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text("MFG: ${item.manufacturer}"),
                             Text("Total Qty → Ls: ${item.brLooseQty + item.whLooseQty} | Pk: ${item.brPackQty + item.whPackQty}"),
                           ],
-
                         ),
                         children: [
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text("CSV Code: ${item.itemCode_csv}"),
                                 Text("Code: ${item.itemCode}"),
@@ -327,30 +281,25 @@ class _StockListScreenState extends State<StockListScreen> {
                                 Text("Warehouse → Ls: ${item.whLooseQty} | Pk: ${item.whPackQty}"),
                                 Text("Branch → Ls: ${item.brLooseQty} | Pk: ${item.brPackQty}"),
                                 // In the list view item builder, you can check the available stock and update the UI accordingly
-
                                 Row(
                                   children: [
                                     IconButton(
                                       onPressed: () {
                                         setState(() {
-                                          int currentQty = selectedQuantities[item.itemCode] ?? 0;
-                                          if (currentQty > 0) {
-                                            selectedQuantities[item.itemCode] = currentQty - 1;
+                                          if (selectedQty > 0) {
+                                            selectedQuantities[item.itemCode] = selectedQty - 1;
                                           }
                                         });
                                       },
                                       icon: const Icon(Icons.remove_circle_outline),
                                     ),
-                                    Text(
-                                      '${selectedQuantities[item.itemCode] ?? 0}',
-                                      style: const TextStyle(fontSize: 16),
-                                    ),
+                                    Text('$selectedQty', style: const TextStyle(fontSize: 16)),
                                     IconButton(
                                       onPressed: () {
-                                        int currentQty = selectedQuantities[item.itemCode] ?? 0;
-                                        if (currentQty < item.whLooseQty + item.whPackQty) {
+                                        final maxQty = item.whLooseQty + item.whPackQty;
+                                        if (selectedQty < maxQty) {
                                           setState(() {
-                                            selectedQuantities[item.itemCode] = currentQty + 1;
+                                            selectedQuantities[item.itemCode] = selectedQty + 1;
                                           });
                                         } else {
                                           ScaffoldMessenger.of(context).showSnackBar(
@@ -360,18 +309,42 @@ class _StockListScreenState extends State<StockListScreen> {
                                       },
                                       icon: const Icon(Icons.add_circle_outline),
                                     ),
-                                    const SizedBox(width: 20),
+                                    const SizedBox(width: 10),
                                     ElevatedButton.icon(
-                                      onPressed: () => addToCart(item),
-                                      icon: const Icon(Icons.shopping_cart),
+                                      onPressed: selectedQty > 0
+                                          ? () {
+                                        final product = {
+                                          "id": item.itemCode,
+                                          "title": item.itemName,
+                                          "price": item.mrp,
+                                          "quantity": selectedQty,
+                                          "image": item.imageLink,
+                                        };
+
+                                        setState(() {
+                                          // Check if already in cart, update quantity
+                                          final existingIndex = cart.indexWhere((p) => p['id'] == product['id']);
+                                          if (existingIndex != -1) {
+                                            cart[existingIndex]['quantity'] += selectedQty;
+                                          } else {
+                                            cart.add(product);
+                                          }
+                                        });
+
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text("Item added to cart")),
+                                        );
+                                      }
+                                          : null,
+                                      icon: const Icon(Icons.add_shopping_cart),
                                       label: const Text("Add to Cart"),
                                     ),
-                                  ],
-                                ),
 
+                                  ],
+                                )
                               ],
                             ),
-                          )
+                          ),
                         ],
                       ),
                     );

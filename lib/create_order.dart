@@ -11,34 +11,24 @@ class CreateOrderScreen extends StatefulWidget {
 }
 
 class _CreateOrderScreenState extends State<CreateOrderScreen> {
+  final TextEditingController _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String productName = '';
-  String customerName = '';
-  String customerPhone = '';
-  int quantity = 1;
-  double price = 0.0;
-  String? selectedSalesperson;
-  String? selectedSalespersonName;
+  bool isChecking = false;
 
-  List<dynamic> salespeople = [];
-  bool isFetchingSalespeople = false;
+  Future<void> _checkCustomerExists(String phone) async {
+    if (phone.length != 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid 10-digit phone number')),
+      );
+      return;
+    }
 
-  final TextEditingController _salespersonController = TextEditingController();
-
-  @override
-  void dispose() {
-    _salespersonController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadSalespeople() async {
-    if (salespeople.isNotEmpty) return;
-
-    setState(() => isFetchingSalespeople = true);
+    setState(() => isChecking = true);
 
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
+
       if (token == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Unauthorized: Token not found')),
@@ -47,189 +37,87 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       }
 
       final response = await http.get(
-        Uri.parse('https://sona-medico-backend.onrender.com/api/v1/salespeople'),
+        Uri.parse('https://sona-medico-backend.onrender.com/api/v1/checkCustomer/$phone'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          // 'Authorization': 'Bearer $token',
         },
       );
 
       if (response.statusCode == 200) {
-        setState(() {
-          salespeople = jsonDecode(response.body);
-        });
+        final data = jsonDecode(response.body);
+        final bool exists = data['exists'];
+
+        if (exists) {
+          final customer = data['customer'];
+          Navigator.pushReplacementNamed(
+            context,
+            '/stockData',
+            arguments: customer, // send full data to next screen
+          );
+        } else {
+          Navigator.pushReplacementNamed(
+            context,
+            '/createCustomer',
+            arguments: phone,
+          );
+        }
       } else {
-        throw Exception('Failed to fetch salespeople');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: ${response.body}')),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching salespeople: $e')),
+        SnackBar(content: Text('Error: $e')),
       );
     } finally {
-      setState(() => isFetchingSalespeople = false);
+      setState(() => isChecking = false);
     }
   }
 
-  void _showSalespersonSelector() async {
-    await _loadSalespeople();
-    if (salespeople.isEmpty) return;
-
-    showModalBottomSheet(
-      context: context,
-      builder: (_) => ListView(
-        children: salespeople.map((salesperson) {
-          final name = salesperson['fullName'] ?? 'Unnamed';
-          final id = salesperson['id']?.toString();
-
-          return ListTile(
-            title: Text(name),
-            onTap: () {
-              setState(() {
-                selectedSalesperson = id;
-                selectedSalespersonName = name;
-                _salespersonController.text = name;
-              });
-              Navigator.pop(context);
-            },
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Future<void> _submitOrder() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-
-    if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unauthorized: Token not found')),
-      );
-      return;
-    }
-
-    try {
-      final response = await http.post(
-        Uri.parse('https://sona-medico-backend.onrender.com/api/v1/createOrder'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'productName': productName,
-          'customerName': customerName,
-          'customerPhone':customerPhone,
-          'quantity': quantity,
-          'price': price,
-          'salespersonId': selectedSalesperson,
-          'salespersonName':selectedSalespersonName,
-        }),
-      );
-      print("Response Data,$response");
-      if (response.statusCode == 200) {
-        // Send notification via backend API
-        await http.post(
-          Uri.parse('https://sona-medico-backend.onrender.com/api/v1/sendNotification'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-          body: jsonEncode({
-            'salespersonId': selectedSalesperson,
-            'title': 'New Order Assigned',
-            'body': 'An order for $productName has been assigned to you.',
-          }),
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Order created successfully!')),
-        );
-        Navigator.pop(context);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create order: ${response.body}')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error submitting order: $e')),
-      );
-    }
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Order')),
+      appBar: AppBar(title: const Text('Enter Customer Number')),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
             children: [
               TextFormField(
-                decoration: const InputDecoration(labelText: 'Product Name'),
-                onChanged: (val) => productName = val,
-                validator: (val) =>
-                val!.isEmpty ? 'Enter a product name' : null,
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Customer Name'),
-                onChanged: (val) => customerName = val,
-                validator: (val) =>
-                val!.isEmpty ? 'Enter a customer name' : null,
-              ),
-              TextFormField(
-                decoration: const InputDecoration(
-                  labelText: 'Customer Phone',
-                ),
+                controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                onChanged: (val) => customerPhone = val,
-                validator: (val) =>
-                val == null || val.length < 10 ? 'Enter a valid phone number' : null,
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Quantity'),
-                keyboardType: TextInputType.number,
-                onChanged: (val) => quantity = int.tryParse(val) ?? 1,
-              ),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Price'),
-                keyboardType: TextInputType.number,
-                onChanged: (val) => price = double.tryParse(val) ?? 0.0,
-              ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: _showSalespersonSelector,
-                child: AbsorbPointer(
-                  child: TextFormField(
-                    controller: _salespersonController,
-                    decoration: InputDecoration(
-                      labelText: 'Assign Salesperson',
-                      suffixIcon: isFetchingSalespeople
-                          ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                          : const Icon(Icons.arrow_drop_down),
-                    ),
-                    validator: (val) => selectedSalesperson == null
-                        ? 'Please select a salesperson'
-                        : null,
-                  ),
+                decoration: const InputDecoration(
+                  labelText: 'Customer Phone Number',
+                  prefixIcon: Icon(Icons.phone),
                 ),
+                validator: (val) {
+                  if (val == null || val.isEmpty) {
+                    return 'Phone number is required';
+                  } else if (val.length != 10) {
+                    return 'Enter a valid 10-digit number';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
+              isChecking
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
-                    _submitOrder();
+                    _checkCustomerExists(_phoneController.text);
                   }
                 },
-                child: const Text('Submit'),
+                child: const Text('Continue'),
               ),
             ],
           ),
