@@ -184,55 +184,60 @@ class Admindashboard extends StatelessWidget {
         children: [
           if (isWide) _buildSidebar(context),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0), // Smaller padding
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.verified_user, color: Colors.blueAccent, size: 24), // smaller icon
-                  const SizedBox(width: 8),
-                  Text(
-                    "Welcome, $username",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                      color: Colors.black87,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.verified_user, color: Colors.blueAccent, size: 24),
+                        SizedBox(width: 8),
+                        Text(
+                          "Welcome",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 8), // Smaller gap
-                  // Create a matrix-like grid layout
-                  GridView.count(
-                    crossAxisCount: 2, // 3 columns to form a matrix
-                    crossAxisSpacing: 10, // Reduced spacing between columns
-                    mainAxisSpacing: 10, // Reduced spacing between rows
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(), // Disable scrolling in grid
-                    children: [
-                      _buildFeatureCard('Create Order', Icons.add, () {
-                        _navigateTo('create_order', context);
-                      }),
-                      _buildFeatureCard('View Orders', Icons.view_list, () {
-                        _navigateTo('view_orders', context);
-                      }),
-                      _buildFeatureCard('Create Employee', Icons.person_add, () {
-                        _navigateTo('create_employee', context);
-                      }),
-                      _buildFeatureCard('Stock', Icons.medical_services, () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const StockListScreen()),
-                        );
-                      }),
-                      _buildFeatureCard('Create Customer', Icons.person_add, () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => CustomerCreatePage()),
-                        );
-                      }),
-                    ],
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    GridView.count(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        _buildFeatureCard('Create Order', Icons.add, () {
+                          _navigateTo('create_order', context);
+                        }),
+                        _buildFeatureCard('View Orders', Icons.view_list, () {
+                          _navigateTo('view_orders', context);
+                        }),
+                        _buildFeatureCard('Create Employee', Icons.person_add, () {
+                          _navigateTo('create_employee', context);
+                        }),
+                        _buildFeatureCard('Stock', Icons.medical_services, () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const StockListScreen()),
+                          );
+                        }),
+                        _buildFeatureCard('Create Customer', Icons.person_add, () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => CustomerCreatePage()),
+                          );
+                        }),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

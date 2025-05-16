@@ -13,7 +13,7 @@ class Signup extends StatelessWidget {
     required String password,
     required BuildContext context,
   }) async {
-    const String apiUrl = 'https://sona-medico-backend.onrender.com/api/v1/admin/signup';
+    const String apiUrl = 'https://sona-medico-backend.onrender.com/api/v1/signup';
 
     try {
       final response = await http.post(

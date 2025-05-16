@@ -360,7 +360,7 @@ class _OrderListScreenState extends State<OrderListScreen> {
         itemBuilder: (_, index) {
           final order = orders[index];
 
-          // ✅ Skip rendering hidden orders
+          //  Skip rendering hidden orders
           if (hiddenOrderIds.contains(order['id'])) {
             return const SizedBox.shrink();
           }

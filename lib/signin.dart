@@ -177,6 +177,19 @@ class _SigninState extends State<Signin> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  // TextButton(
+                  //   onPressed: () {
+                  //     Navigator.push(
+                  //       context,
+                  //       MaterialPageRoute(builder: (context) => const Signup()),
+                  //     );
+                  //   },
+                  //   child: const Text(
+                  //     "Don't have an account? Sign Up",
+                  //     style: TextStyle(color: Colors.blue), // You can style it as clickable
+                  //   ),
+                  // ),
+
                   TextButton(
                     onPressed: null, // This disables the button
                     child: const Text(

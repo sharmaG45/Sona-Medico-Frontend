@@ -151,10 +151,36 @@ class _StockListScreenState extends State<StockListScreen> {
     }
   }
 
+  // Future<bool> updateStockQuantity(String itemCode, int newQty) async {
+  //   try {
+  //     final response = await http.post(
+  //       Uri.parse('https://sona-medico-backend.onrender.com/api/v1/update-stock/$itemCode'),
+  //       headers: {'Content-Type': 'application/json'},
+  //       body: jsonEncode({
+  //         'itemCode': itemCode,
+  //         'newQuantity': newQty,
+  //       }),
+  //     );
+  //
+  //     if (response.statusCode == 200) {
+  //       return true;
+  //     } else {
+  //       print('Failed to update stock: ${response.body}');
+  //       return false;
+  //     }
+  //   } catch (e) {
+  //     print('Error updating stock: $e');
+  //     return false;
+  //   }
+  // }
+
+
   @override
   Widget build(BuildContext context) {
     final customerData = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
     // final customerData = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    final phoneNumber = customerData['phone'] ?? '';
+    final showCartControls = phoneNumber.toString().isNotEmpty;
     print("Customer Data: $customerData");
     return Scaffold(
       appBar: AppBar(
@@ -170,10 +196,7 @@ class _StockListScreenState extends State<StockListScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => CartPage(
-                        cart: cart,
-                        removeItem: (index) {
-                          setState(() => cart.removeAt(index));
-                        },
+                        cart: cart, // pass reference
                         customerData: customerData,
                       ),
                     ),
@@ -258,74 +281,141 @@ class _StockListScreenState extends State<StockListScreen> {
                                 Text("Category: ${item.group}"),
                                 Text("Content: ${item.content}"),
                                 Text("Storage: ${item.storage}"),
-                                Text("Image Link: ${item.imageLink}"),
+                                Text("Schedule: ${item.schedule}"),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text("Image: "),
+                                    GestureDetector(
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => Dialog(
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Image.network(item.imageLink),
+                                                TextButton(
+                                                  onPressed: () => Navigator.of(context).pop(),
+                                                  child: const Text("Close"),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: Image.network(
+                                          item.imageLink,
+                                          height: 50,
+                                          width: 50,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) =>
+                                          const Icon(Icons.broken_image, size: 50),
+                                          loadingBuilder: (context, child, loadingProgress) {
+                                            if (loadingProgress == null) return child;
+                                            return const SizedBox(
+                                              height: 50,
+                                              width: 50,
+                                              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
                                 Text("MRP: ${item.mrp}"),
                                 const SizedBox(height: 4),
                                 // Quantity Selector
                                 Text("Warehouse → Ls: ${item.whLooseQty} | Pk: ${item.whPackQty}"),
                                 Text("Branch → Ls: ${item.brLooseQty} | Pk: ${item.brPackQty}"),
                                 // In the list view item builder, you can check the available stock and update the UI accordingly
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          if (selectedQty > 0) {
-                                            selectedQuantities[item.itemCode] = selectedQty - 1;
-                                          }
-                                        });
-                                      },
-                                      icon: const Icon(Icons.remove_circle_outline),
-                                    ),
-                                    Text('$selectedQty', style: const TextStyle(fontSize: 16)),
-                                    IconButton(
-                                      onPressed: () {
-                                        final maxQty = item.brLooseQty + item.whLooseQty+item.brPackQty + item.whPackQty;
-                                        if (selectedQty < maxQty) {
+
+                                if (showCartControls)
+                                  Row(
+                                    children: [
+                                      IconButton(
+                                        onPressed: () {
                                           setState(() {
-                                            selectedQuantities[item.itemCode] = selectedQty + 1;
+                                            if (selectedQty > 0) {
+                                              selectedQuantities[item.itemCode] = selectedQty - 1;
+                                            }
                                           });
-                                        } else {
+                                        },
+                                        icon: const Icon(Icons.remove_circle_outline),
+                                      ),
+                                      Text('$selectedQty', style: const TextStyle(fontSize: 16)),
+                                      IconButton(
+                                        onPressed: () {
+                                          final maxQty = item.brLooseQty + item.whLooseQty + item.brPackQty + item.whPackQty;
+                                          if (selectedQty < maxQty) {
+                                            setState(() {
+                                              selectedQuantities[item.itemCode] = selectedQty + 1;
+                                            });
+                                          } else {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text('Not enough stock available')),
+                                            );
+                                          }
+                                        },
+                                        icon: const Icon(Icons.add_circle_outline),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      ElevatedButton.icon(
+                                        onPressed: selectedQty > 0
+                                            ? () {
+                                          final product = {
+                                            "id": item.itemCode,
+                                            "title": item.itemName,
+                                            "price": item.mrp,
+                                            "quantity": selectedQty,
+                                            "image": item.imageLink,
+                                          };
+
+                                          setState(() {
+                                            final existingIndex = cart.indexWhere((p) => p['id'] == product['id']);
+                                            if (existingIndex != -1) {
+                                              cart[existingIndex]['quantity'] = selectedQty; // update quantity
+                                            } else {
+                                              cart.add(product);
+                                            }
+                                          });
+
+                                          // final bool success = await updateStockQuantity(item.itemCode, newQty);
+                                          //
+                                          //
+                                          // if (success) {
+                                          //   ScaffoldMessenger.of(context).showSnackBar(
+                                          //     const SnackBar(content: Text("Item added to cart and stock updated")),
+                                          //   );
+                                          //   // Optionally update UI state to reflect new stock quantities
+                                          //   setState(() {
+                                          //     // Update your item's quantities accordingly here, if you hold it locally
+                                          //     item.brLooseQty = 0; // or update accordingly
+                                          //     item.whLooseQty = 0;  // for example purpose
+                                          //     // Or refetch stock data if needed
+                                          //   });
+                                          // } else {
+                                          //   ScaffoldMessenger.of(context).showSnackBar(
+                                          //     const SnackBar(content: Text("Failed to update stock")),
+                                          //   );
+                                          // }
+
                                           ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Not enough stock available')),
+                                            const SnackBar(content: Text("Item added to cart")),
                                           );
                                         }
-                                      },
-                                      icon: const Icon(Icons.add_circle_outline),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    ElevatedButton.icon(
-                                      onPressed: selectedQty > 0
-                                          ? () {
-                                        final product = {
-                                          "id": item.itemCode,
-                                          "title": item.itemName,
-                                          "price": item.mrp,
-                                          "quantity": selectedQty,
-                                          "image": item.imageLink,
-                                        };
+                                            : null,
+                                        icon: const Icon(Icons.add_shopping_cart),
+                                        label: const Text("Add"),
+                                      ),
+                                    ],
+                                  )
 
-                                        setState(() {
-                                          // Check if already in cart, update quantity
-                                          final existingIndex = cart.indexWhere((p) => p['id'] == product['id']);
-                                          if (existingIndex != -1) {
-                                            cart[existingIndex]['quantity'] += selectedQty;
-                                          } else {
-                                            cart.add(product);
-                                          }
-                                        });
 
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text("Item added to cart")),
-                                        );
-                                      }
-                                          : null,
-                                      icon: const Icon(Icons.add_shopping_cart),
-                                      label: const Text("Add to Cart"),
-                                    ),
-
-                                  ],
-                                )
                               ],
                             ),
                           ),

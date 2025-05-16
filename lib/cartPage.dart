@@ -5,17 +5,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class CartPage extends StatefulWidget {
   final List<Map<String, dynamic>> cart;
-  final void Function(int index) removeItem;
+  // final void Function(int index) removeItem;
   final VoidCallback? clearCart;
   final Map<String, dynamic> customerData;
 
   const CartPage({
     Key? key,
     required this.cart,
-    required this.removeItem,
     required this.customerData,
     this.clearCart,
   }) : super(key: key);
+
 
   @override
   State<CartPage> createState() => _CartPageState();
@@ -373,10 +373,12 @@ class _CartPageState extends State<CartPage> {
               trailing: IconButton(
                 icon: const Icon(Icons.delete, color: Colors.red),
                 onPressed: () {
-                  // Remove item and notify parent
-                  widget.removeItem(index);
-                  // Optionally, you can call setState here if your widget holds local state for cart
-                  // but since cart comes from parent, parent should rebuild this page
+                  setState(() {
+                    widget.cart.removeAt(index);
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Item removed from cart')),
+                  );
                 },
               ),
             ),
