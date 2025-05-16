@@ -2,8 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class Signup extends StatelessWidget {
+class Signup extends StatefulWidget {
   const Signup({super.key});
+
+  @override
+  State<Signup> createState() => _SignupState();
+}
+
+class _SignupState extends State<Signup> {
+  final _formKey = GlobalKey<FormState>();
+  final fullNameController = TextEditingController();
+  final usernameController = TextEditingController();
+  final emailController = TextEditingController();
+  final phoneController = TextEditingController();
+  final passwordController = TextEditingController();
+
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    fullNameController.dispose();
+    usernameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _signup({
     required String fullName,
@@ -32,7 +56,7 @@ class Signup extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Account Created")),
         );
-        Navigator.pop(context);
+        Navigator.pop(context); // Go back to login
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Signup failed: ${response.body}')),
@@ -47,13 +71,6 @@ class Signup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _formKey = GlobalKey<FormState>();
-    final fullNameController = TextEditingController();
-    final usernameController = TextEditingController();
-    final emailController = TextEditingController();
-    final phoneController = TextEditingController();
-    final passwordController = TextEditingController();
-
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: Center(
@@ -107,8 +124,15 @@ class Signup extends StatelessWidget {
                           labelText: "Email",
                           border: OutlineInputBorder(),
                         ),
-                        validator: (value) =>
-                        value!.isEmpty ? 'Enter a valid email' : null,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Enter a valid email';
+                          }
+                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w]{2,4}$').hasMatch(value)) {
+                            return 'Invalid email format';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -124,13 +148,47 @@ class Signup extends StatelessWidget {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: passwordController,
-                        decoration: const InputDecoration(
+                        obscureText: _obscurePassword,
+                        decoration: InputDecoration(
                           labelText: "Password",
-                          border: OutlineInputBorder(),
+                          helperText:
+                          "Min 8 chars, include upper, lower, number & special char",
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
                         ),
-                        obscureText: true,
-                        validator: (value) =>
-                        value!.length < 6 ? 'Password too short' : null,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Enter password';
+                          }
+                          final password = value.trim();
+                          if (password.length < 8) {
+                            return 'Password must be at least 8 characters';
+                          }
+                          if (!RegExp(r'[A-Z]').hasMatch(password)) {
+                            return 'Include at least one uppercase letter';
+                          }
+                          if (!RegExp(r'[a-z]').hasMatch(password)) {
+                            return 'Include at least one lowercase letter';
+                          }
+                          if (!RegExp(r'[0-9]').hasMatch(password)) {
+                            return 'Include at least one number';
+                          }
+                          if (!RegExp(r'[!@#\$&*~]').hasMatch(password)) {
+                            return 'Include at least one special character';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 24),
                       SizedBox(
@@ -139,11 +197,11 @@ class Signup extends StatelessWidget {
                           onPressed: () {
                             if (_formKey.currentState!.validate()) {
                               _signup(
-                                fullName: fullNameController.text,
-                                username: usernameController.text,
-                                email: emailController.text,
-                                phone: phoneController.text,
-                                password: passwordController.text,
+                                fullName: fullNameController.text.trim(),
+                                username: usernameController.text.trim(),
+                                email: emailController.text.trim(),
+                                phone: phoneController.text.trim(),
+                                password: passwordController.text.trim(),
                                 context: context,
                               );
                             }
