@@ -18,8 +18,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   Future<void> _checkCustomerExists(String phone) async {
     if (phone.length != 10) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid 10-digit phone number')),
+        const SnackBar(
+          content: Text(
+            'Invalid input: Please enter a valid 10-digit phone number.',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.orangeAccent,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 4),
+        ),
       );
+
       return;
     }
 
@@ -31,8 +40,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
       if (token == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unauthorized: Token not found')),
+          const SnackBar(
+            content: Text(
+              'Unauthorized access: Token not found.',
+              style: TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 4),
+          ),
         );
+
         return;
       }
 
@@ -43,6 +61,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           // 'Authorization': 'Bearer $token',
         },
       );
+
+      print("Customer Data ${response.body}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -64,13 +84,28 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: ${response.body}')),
+          SnackBar(
+            content: Text(
+              'Request failed: ${response.body}',
+              style: TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 4),
+          ),
         );
+
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+          SnackBar(
+            content: Text('An unexpected error occurred. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 4),
+          )
       );
+
     } finally {
       setState(() => isChecking = false);
     }

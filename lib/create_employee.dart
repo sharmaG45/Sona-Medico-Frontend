@@ -41,8 +41,17 @@ class _CreateEmployeeScreenState extends State<CreateEmployeeScreen> {
         print("Saved order token: $token");
         if (token == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unauthorized: Token not found')),
+            const SnackBar(
+              content: Text(
+                'Unauthorized: Token not found.',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 4),
+            ),
           );
+
           return;
         }
 
@@ -60,10 +69,16 @@ print("Resposne Employee,${response.statusCode}");
         if (response.statusCode == 200) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("Employee created successfully!"),
+              content: Text(
+                "Employee created successfully!",
+                style: TextStyle(color: Colors.white),
+              ),
               backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
             ),
           );
+
           _formKey.currentState!.reset();
           fullNameController.clear();
           usernameController.clear();
@@ -78,19 +93,31 @@ print("Resposne Employee,${response.statusCode}");
           final errorMsg = responseBody['message'] ?? 'Something went wrong';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("Error: $errorMsg"),
+              content: Text(
+                "Error: $errorMsg",
+                style: const TextStyle(color: Colors.white),
+              ),
               backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
             ),
           );
+
         }
       } catch (e) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error: $e"),
+            content: Text(
+              "Error: $e",
+              style: const TextStyle(color: Colors.white),
+            ),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
           ),
         );
+
       }
     }
   }

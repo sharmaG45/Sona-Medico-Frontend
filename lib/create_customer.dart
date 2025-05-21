@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:country_state_city_pro/country_state_city_pro.dart';
 
 class CustomerCreatePage extends StatefulWidget {
   @override
@@ -13,18 +14,29 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _addressLine1Controller = TextEditingController();
+  final TextEditingController _addressLine2Controller = TextEditingController();
+  final TextEditingController _pincodeController = TextEditingController();
+
+  // Country picker controllers
+  final TextEditingController country = TextEditingController();
+  final TextEditingController state = TextEditingController();
+  final TextEditingController city = TextEditingController();
 
   String? _phone;
 
-  // Submit form
   Future<void> _submitForm() async {
     if (_formKey.currentState?.validate() ?? false) {
       final customerData = {
         'name': _nameController.text,
         'email': _emailController.text,
         'phone': _phoneController.text,
-        'address': _addressController.text,
+        'address_line_1': _addressLine1Controller.text,
+        'address_line_2': _addressLine2Controller.text,
+        'pincode': _pincodeController.text,
+        'country': country.text,
+        'state': state.text,
+        'city': city.text,
       };
 
       try {
@@ -33,31 +45,63 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(customerData),
         );
+        
+        
+        print("Response Status,${response.statusCode}");
 
         if (response.statusCode == 200) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Customer created successfully')),
+            const SnackBar(
+              content: Text(
+                'Customer created successfully!',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+            ),
           );
 
-          // Clear the form
+
           _formKey.currentState?.reset();
           _nameController.clear();
           _emailController.clear();
-          _addressController.clear();
-
-          // Keep the phone number pre-filled and non-editable
+          _addressLine1Controller.clear();
+          _addressLine2Controller.clear();
+          _pincodeController.clear();
+          country.clear();
+          state.clear();
+          city.clear();
           _phoneController.text = _phone ?? '';
 
           Navigator.pushReplacementNamed(context, '/stockData', arguments: customerData);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to create customer')),
+            const SnackBar(
+              content: Text(
+                'Failed to create customer. Please try again.',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+            ),
           );
+
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(
+            content: Text(
+              'An unexpected error occurred. ${e.toString()}',
+              style: TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 4),
+          ),
         );
+
       }
     }
   }
@@ -79,7 +123,12 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _addressController.dispose();
+    _addressLine1Controller.dispose();
+    _addressLine2Controller.dispose();
+    _pincodeController.dispose();
+    country.dispose();
+    state.dispose();
+    city.dispose();
     super.dispose();
   }
 
@@ -120,7 +169,7 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
 
               TextFormField(
                 controller: _phoneController,
-                enabled: false,
+                enabled: true,
                 decoration: const InputDecoration(
                   labelText: 'Phone Number',
                 ),
@@ -128,16 +177,56 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
               const SizedBox(height: 16.0),
 
               TextFormField(
-                controller: _addressController,
+                controller: _addressLine1Controller,
                 decoration: const InputDecoration(
-                  labelText: 'Address',
-                  hintText: 'Enter customer address',
+                  labelText: 'Address Line 1',
+                  hintText: 'House number, street, etc.',
                 ),
                 validator: (value) =>
-                value == null || value.isEmpty ? 'Please enter an address' : null,
+                value == null || value.isEmpty ? 'Please enter address line 1' : null,
               ),
-              const SizedBox(height: 32.0),
+              const SizedBox(height: 16.0),
 
+              TextFormField(
+                controller: _addressLine2Controller,
+                decoration: const InputDecoration(
+                  labelText: 'Address Line 2',
+                  hintText: 'Area, locality (optional)',
+                ),
+              ),
+              const SizedBox(height: 16.0),
+
+              TextFormField(
+                controller: _pincodeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Pincode',
+                ),
+                validator: (value) =>
+                value == null || value.isEmpty ? 'Please enter a pincode' : null,
+              ),
+              const SizedBox(height: 16.0),
+
+              CountryStateCityPicker(
+                country: country,
+                state: state,
+                city: city,
+                dialogColor: Colors.grey.shade200,
+                textFieldDecoration: InputDecoration(
+                  fillColor: Colors.blueGrey.shade100,
+                  filled: true,
+                  suffixIcon: const Icon(Icons.arrow_drop_down),
+                  border: const OutlineInputBorder(borderSide: BorderSide.none),
+                ),
+              ),
+
+              // const SizedBox(height: 20),
+              // Text(
+              //   "Selected: ${country.text}, ${state.text}, ${city.text}",
+              //   style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+              // ),
+
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submitForm,
                 child: const Text('Create Customer'),

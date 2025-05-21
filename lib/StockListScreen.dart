@@ -186,10 +186,12 @@ class _StockListScreenState extends State<StockListScreen> {
       appBar: AppBar(
         title: const Text("Stock Details"),
         backgroundColor: Colors.blue,
-        actions: [
+        actions: showCartControls
+            ? [
           Stack(
             children: [
               IconButton(
+                iconSize: 38.0,
                 icon: const Icon(Icons.shopping_cart),
                 onPressed: () {
                   Navigator.push(
@@ -205,7 +207,7 @@ class _StockListScreenState extends State<StockListScreen> {
               ),
               if (cart.isNotEmpty)
                 Positioned(
-                  right: 6,
+                  right: 10,
                   top: 6,
                   child: Container(
                     padding: const EdgeInsets.all(4),
@@ -223,8 +225,10 @@ class _StockListScreenState extends State<StockListScreen> {
                 ),
             ],
           )
-        ],
+        ]
+            : [],
       ),
+
       body: FutureBuilder<List<StockItem>>(
         future: stockFuture,
         builder: (context, snapshot) {
@@ -357,7 +361,15 @@ class _StockListScreenState extends State<StockListScreen> {
                                             });
                                           } else {
                                             ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Not enough stock available')),
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Insufficient stock available for this item.',
+                                                  style: TextStyle(color: Colors.white),
+                                                ),
+                                                backgroundColor: Colors.red,
+                                                behavior: SnackBarBehavior.floating,
+                                                duration: Duration(seconds: 3),
+                                              ),
                                             );
                                           }
                                         },
@@ -405,7 +417,15 @@ class _StockListScreenState extends State<StockListScreen> {
                                           // }
 
                                           ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text("Item added to cart")),
+                                            const SnackBar(
+                                              content: Text(
+                                                "Item successfully added.",
+                                                style: TextStyle(color: Colors.white),
+                                              ),
+                                              backgroundColor: Colors.green,
+                                              behavior: SnackBarBehavior.floating,
+                                              duration: Duration(seconds: 3),
+                                            ),
                                           );
                                         }
                                             : null,

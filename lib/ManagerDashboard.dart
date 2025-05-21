@@ -18,8 +18,14 @@ class Managerdashboard extends StatelessWidget {
 
       if (token == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unauthorized: Token not found')),
+          const SnackBar(
+            content: Text('Unauthorized: Token not found. Please log in again.'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 4),
+          ),
         );
+
         return;
       }
 
@@ -40,18 +46,26 @@ class Managerdashboard extends StatelessWidget {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Logout failed: ${response.reasonPhrase}'),
-            backgroundColor: Colors.red,
-          ),
+            SnackBar(
+              content: Text(
+                'Unable to log out at the moment. Please try again shortly.',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 4),
+            )
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+          SnackBar(
+            content: Text('An unexpected error occurred. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 4),
+          )
+
       );
     }
   }

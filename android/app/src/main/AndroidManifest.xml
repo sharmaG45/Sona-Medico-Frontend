@@ -3,6 +3,8 @@
         android:label="Sona Medical"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -59,4 +61,7 @@
             <action android:name="android.support.customtabs.action.CustomTabsService" />
         </intent>
     </queries>
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
+
 </manifest>

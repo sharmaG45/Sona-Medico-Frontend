@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class CartPage extends StatefulWidget {
   final List<Map<String, dynamic>> cart;
-  // final void Function(int index) removeItem;
   final VoidCallback? clearCart;
   final Map<String, dynamic> customerData;
 
@@ -236,9 +235,23 @@ class _CartPageState extends State<CartPage> {
         "customerName": widget.customerData['name'] ?? 'Unknown Customer',
         "customerPhone": widget.customerData['phone'] ?? '',
         "customerEmail": widget.customerData['email'] ?? '',
-        "customerAddress": widget.customerData['address'] ?? '',
+
+        // Combine non-empty address parts into a single line
+        "customerAddress": [
+          widget.customerData['address_line_1'],
+          widget.customerData['address_line_2'],
+          widget.customerData['city'],
+          widget.customerData['pincode'],
+          widget.customerData['state'],
+          widget.customerData['country'],
+        ]
+            .where((line) => line != null && line.toString().trim().isNotEmpty)
+            .join(', '),
+
         "salespersonId": selectedSalespersonId,
         "salespersonName": selectedSalespersonName,
+
+        // Serialize products
         "products": widget.cart.map((product) => {
           "id": product['id'],
           "title": product['title'],
@@ -261,7 +274,16 @@ class _CartPageState extends State<CartPage> {
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Order submitted to $selectedSalespersonName!')),
+            SnackBar(
+              content: Text(
+                'Order successfully submitted to $selectedSalespersonName.',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+            ),
+
         );
 
         // Clear the cart after successful order submission
@@ -377,7 +399,15 @@ class _CartPageState extends State<CartPage> {
                     widget.cart.removeAt(index);
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Item removed from cart')),
+                      const SnackBar(
+                        content: Text(
+                          'Item removed.',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        backgroundColor: Colors.orange,
+                        behavior: SnackBarBehavior.floating,
+                        duration: Duration(seconds: 3),
+                      ),
                   );
                 },
               ),

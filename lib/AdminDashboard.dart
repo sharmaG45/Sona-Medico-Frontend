@@ -38,24 +38,42 @@ class Admindashboard extends StatelessWidget {
       if (response.statusCode == 200) {
         await prefs.remove('token');
 
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You have been logged out successfully.'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 2),
+            ),
+          );
+
+        await Future.delayed(const Duration(seconds: 2)); // Wait for snackbar to show
+
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const Signin()),
               (Route<dynamic> route) => false,
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Logout failed: ${response.reasonPhrase}'),
-            backgroundColor: Colors.red,
-          ),
+            SnackBar(
+              content: Text(
+                'Unable to log out at the moment. Please try again shortly.',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 4),
+            ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+          SnackBar(
+            content: Text('An unexpected error occurred. Please try again.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 4),
+          )
       );
     }
   }
@@ -284,4 +302,3 @@ class Admindashboard extends StatelessWidget {
     );
   }
 }
-

@@ -50,8 +50,13 @@ class _OrderListScreenState extends State<OrderListScreen> {
     final role = prefs.getString('role'); // Get the current user's role
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unauthorized: Token not found')),
+        const SnackBar(
+          content: Text('Unauthorized access: Token not found. Please login again.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
+
       return;
     }
 
@@ -85,8 +90,13 @@ class _OrderListScreenState extends State<OrderListScreen> {
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to fetch orders')),
+        const SnackBar(
+          content: Text('Failed to fetch orders. Please try again later.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
+
     }
   }
 
@@ -108,12 +118,22 @@ class _OrderListScreenState extends State<OrderListScreen> {
         orders.removeAt(index);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Order deleted successfully')),
+        const SnackBar(
+          content: Text('Order deleted successfully.'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
+
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to delete order')),
+        const SnackBar(
+          content: Text('Failed to delete order. Please try again.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
+
     }
   }
 
@@ -224,7 +244,6 @@ class _OrderListScreenState extends State<OrderListScreen> {
     }
   }
 
-  //   // Previous
   Future<void> _markReadyForDelivery(String id) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
@@ -240,8 +259,13 @@ class _OrderListScreenState extends State<OrderListScreen> {
       newStatus = 'Delivered'; // For delivery, mark it as delivered after confirming
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unknown role or invalid status')),
+        const SnackBar(
+          content: Text('Error: Unknown role or invalid status.'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
+
       return;
     }
 
@@ -260,13 +284,23 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
     if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Order marked as Ready for Delivery')),
+        const SnackBar(
+          content: Text('Order marked as Ready for Delivery!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
+
       fetchOrders();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to update status')),
+        const SnackBar(
+          content: Text('Failed to update status. Please try again.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
+
     }
   }
 
@@ -304,8 +338,14 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unauthorized: Token not found')),
+        const SnackBar(
+          content: Text('Unauthorized: Token not found. Please log in again.'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 4),
+        ),
       );
+
       return;
     }
 
@@ -323,19 +363,37 @@ class _OrderListScreenState extends State<OrderListScreen> {
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Order assigned to delivery person')),
+          const SnackBar(
+            content: Text('Order successfully assigned to delivery person.'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+          ),
         );
+
         await fetchOrders(); // Refresh the order list after assignment
       } else {
         final errorData = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to assign delivery person: ${errorData['message'] ?? 'Unknown error'}')),
+          SnackBar(
+            content: Text('Failed to assign delivery person: ${errorData['message'] ?? 'Unknown error occurred.'}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 4),
+          ),
         );
+
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error assigning delivery person: $e')),
+        SnackBar(
+          content: Text('Error assigning delivery person: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 4),
+        ),
       );
+
     }
   }
 
@@ -346,8 +404,14 @@ class _OrderListScreenState extends State<OrderListScreen> {
       await launchUrl(url);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not launch dialer')),
+        const SnackBar(
+          content: Text('Could not launch dialer'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 3),
+        ),
       );
+
     }
   }
 
